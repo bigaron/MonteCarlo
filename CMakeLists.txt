@@ -12,7 +12,6 @@ add_executable(MonteCarlo ./src/main.cpp ./src/Shader.h)
 
 target_include_directories(MonteCarlo PUBLIC ./src/)
 
-
 target_include_directories(MonteCarlo PUBLIC include/glfw/include/)
 target_include_directories(MonteCarlo PUBLIC include/glew/include/GL/)
 target_include_directories(MonteCarlo PUBLIC include/glm/)
