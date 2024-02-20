@@ -8,7 +8,7 @@ find_package(OpenGL REQUIRED)
 add_subdirectory(include/glfw/)
 add_subdirectory(include/glew/build/cmake)
 
-add_executable(MonteCarlo ./src/main.cpp ./src/Shader.h)
+add_executable(MonteCarlo ./src/main.cpp ./src/Shader.h ./src/Camera.h)
 
 target_include_directories(MonteCarlo PUBLIC ./src/)
 
