@@ -1,4 +1,4 @@
-
+# PDE solver with Monte Carlo method
 ## Prerequisites 
 
 To run the project you need to have cmake, and a c++ compiler installed on your pc. The following source files have to be also included in the ./include/ folder
