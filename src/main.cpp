@@ -36,6 +36,8 @@ int main(){
     }
 
     glViewport(0, 0, screenWidth, screenHeight);
+    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl << "GPU: "<< glGetString(GL_RENDERER) << std::endl;
+
     glEnable(GL_DEPTH_TEST);
 
     Shader shader("../src/shaders/vertex.vs", "../src/shaders/fragment.fs");
@@ -86,31 +88,26 @@ int main(){
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
-    unsigned int indx[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-    
-    unsigned int vao, vbo, ebo;
+    unsigned int vao, vbo, ubo;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+    glGenBuffers(1, &ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), nullptr, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, 0, 2 * sizeof(glm::mat4));
     glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indx), indx, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,  6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glUseProgram(shader.ID);
-    unsigned int modelLoc, viewLoc, projLoc;
+    unsigned int modelLoc;
     try{
         modelLoc = shader.getUniformLocation("model");
-        viewLoc = shader.getUniformLocation("view");
-        projLoc = shader.getUniformLocation("projection");
     }catch(...){
         char cal;
         std::cout << "Enter in any key to close the program" << std::endl;
@@ -136,7 +133,6 @@ int main(){
         glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
 
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
     float deltaTime, lastFrame = .0f;
     while(!glfwWindowShouldClose(window)){
         auto currentFrame = (float)glfwGetTime();
@@ -147,9 +143,9 @@ int main(){
         
         camera.processInput(window, deltaTime);
         view = camera.getLookAt();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         proj = camera.getProjMtx();
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
+
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(proj)); 
 
         for(auto i = 0; i < 10; ++i){
             model = glm::mat4(1.0f);
@@ -157,8 +153,9 @@ int main(){
             float angle = 20.f * (float)i;
             model = i % 3 != 0 ? glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .5f, 0.3f)) : glm::rotate(model, (float)glfwGetTime() * glm::radians(23.f * (float)(i+1)), glm::vec3(1.f, .5f, .3f));
 
+            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+            
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
