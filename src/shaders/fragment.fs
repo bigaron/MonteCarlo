@@ -87,7 +87,6 @@ void main(){
         sum += MonteCarloEstim(gl_FragCoord);
     }
     sum /= params.sampleN;
-    sum.w = 1.;
 
     FragColor = sum;
 }

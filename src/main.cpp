@@ -36,7 +36,7 @@ int main(){
     Shader shader("../src/shaders/vertex.vs", "../src/shaders/fragment.fs");
 
     int halfW = screenWidth / 2, halfH = screenHeight / 2;
-    int side = 80;
+    int side = 200;
     std::vector<glm::vec4> points = {glm::vec4(halfW + side, halfH - side, 0., 1.), glm::vec4(halfW + side, halfH + side, 0., 1.), glm::vec4(halfW - side, halfH + side, 0., 1.), glm::vec4(halfW - side, halfH - side, 0., 1.)};
     std::vector<glm::vec4> boundary = {glm::vec4(1.f, 0.f, .0f, 1.f), glm::vec4(.0f, 1.f, 0.f, 1.f), glm::vec4(.0f, 0.f, 1.f, 1.f), glm::vec4( 1.f, 1.f, .0f, 1.f)};
     std::vector<VertexAttrib> vtxs, bounds;
