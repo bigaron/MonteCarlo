@@ -3,16 +3,18 @@
 #define M_PI 3.1415926535897932384626433832795
 const float inf = 100000000.f;
 
-
 out vec4 FragColor;
 
 in vec4 ourColor;
 
+struct VertexData{
+    vec4 pos;
+    vec4 value;
+};
+
 //Struct HAS to take up N * sizeof(vec4) space
 struct MonteCarloParams{
-    vec4 boundaryValue[4];
-    vec4 points[8];
-    float pointN;
+    float vertexN;
     float eps;
     float sampleN;
     float padding2;
@@ -20,6 +22,11 @@ struct MonteCarloParams{
 
 layout(std430, binding = 1) readonly buffer ssbo1{
     MonteCarloParams params;
+    VertexData boundaryPoints[];
+};
+
+layout(std140, binding = 0) uniform Matrices{
+    vec4 resolution;
 };
 
 //Result ranges from [0-1]
@@ -31,13 +38,17 @@ float rand(int seed){
     return ret / m_f;
 }
 
+float distanceFromLine(vec4 p, vec4 x_o, vec4 x_1){
+    vec4 v = (x_1 - x_o) / length(x_1 - x_o);
+    vec4 r = p - x_o;
+    vec4 a = dot(r,  v) * v;
+    return length(r - a);
+}
+
 float closestPoint(vec4 x_o){
     float dist = inf;
-    for(int i = 0; i < params.pointN; i += 2){
-        vec4 v = (params.points[i+1] - params.points[i]) / length(params.points[i+1] - params.points[i]);
-        vec4 p = x_o - params.points[i];
-        vec4 a = dot(p,  v) * v;
-        float distFromCurrentWall = length(p - a);
+    for(int i = 0; i < params.vertexN - 1; i++){
+        float distFromCurrentWall = distanceFromLine(x_o, boundaryPoints[i].pos, boundaryPoints[i+1].pos);
         if(distFromCurrentWall < dist) dist = distFromCurrentWall;
     }
     return dist;
@@ -47,12 +58,11 @@ vec4 getBoundaryValue(vec4 x_o){
     float dist = inf;
     int boundIndx = 0;
     vec4 ret;
-    for(int i = 0; i < params.pointN; ++i) {
-        if(i != 0 && i % 2 == 0) boundIndx++;
-        float currentDist = length(x_o - params.points[i]);
+    for(int i = 0; i < params.vertexN - 1; ++i) {
+        float currentDist = distanceFromLine(x_o, boundaryPoints[i].pos, boundaryPoints[i+1].pos);
         if(currentDist < dist) {
             dist = currentDist;
-            ret = params.boundaryValue[boundIndx];
+            ret = boundaryPoints[i].value;
         }
     }
 
@@ -60,27 +70,24 @@ vec4 getBoundaryValue(vec4 x_o){
 }
 
 vec4 MonteCarloEstim(vec4 currentOrigin){
-    float closest = closestPoint(currentOrigin);
-    while(closest > params.eps) {  
+    float radius = closestPoint(currentOrigin);
+    while(radius > params.eps) {  
         int seed = int(currentOrigin.x * 2000000); 
         float th = rand(seed) * 2 *  M_PI;
-        currentOrigin = vec4(currentOrigin.x + closest * cos(th), currentOrigin.y + closest * sin(th), currentOrigin.zw);
-        closest = closestPoint(currentOrigin);
+        currentOrigin = vec4(currentOrigin.x + radius * cos(th), currentOrigin.y + radius * sin(th), currentOrigin.zw);
+        radius = closestPoint(currentOrigin);
     }
 
     return getBoundaryValue(currentOrigin);    
 }
 
 void main(){
-    vec4 pos = vec4((gl_FragCoord.x / 1280.0f * 2) - 1, (gl_FragCoord.y / 720.0f * 2) - 1, gl_FragCoord.zw);
-    vec4 sum = vec4(0.0f), sum2 = vec4(1.f);
-    sum += sum2;
+    vec4 sum = vec4(0.0f);
     for(int i = 0; i < params.sampleN; ++i){
-        sum += MonteCarloEstim(pos);
+        sum += MonteCarloEstim(gl_FragCoord);
     }
     sum /= params.sampleN;
     sum.w = 1.;
 
     FragColor = sum;
-
 }
