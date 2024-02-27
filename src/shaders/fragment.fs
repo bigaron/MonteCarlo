@@ -82,11 +82,10 @@ vec4 MonteCarloEstim(vec4 currentOrigin){
 }
 
 void main(){
-    vec4 sum = vec4(0.0f);
+    vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
     for(int i = 0; i < params.sampleN; ++i){
         sum += MonteCarloEstim(gl_FragCoord);
     }
-    sum /= params.sampleN;
 
-    FragColor = sum;
+    FragColor = sum / params.sampleN;
 }
