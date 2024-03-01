@@ -51,7 +51,7 @@ int main(){
 
     MonteCarloParameters mcParms;
     mcParms.eps = 0.6f;
-    mcParms.sampleN = 5;
+    mcParms.sampleN = 100;
     mcParms.vertexN = 5;
 
     glUseProgram(shader.ID);

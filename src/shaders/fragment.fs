@@ -2,6 +2,7 @@
 
 #define M_PI 3.1415926535897932384626433832795
 const float inf = 100000000.f;
+const int maxWalk = 200;
 
 out vec4 FragColor;
 
@@ -29,13 +30,19 @@ layout(std140, binding = 0) uniform Matrices{
     vec4 resolution;
 };
 
-//Result ranges from [0-1]
-//Source: https://en.wikipedia.org/wiki/Lehmer_random_number_generator
-float rand(int seed){
-    int a = 16807, m = 2147483647;
-    float m_f = 2147483647;
-    float ret = float((a * seed) % m);
-    return ret / m_f;
+//Rand function from Visual Studio
+//Actual source: https://www.shadertoy.com/view/WdXfzl
+int seed = 1;
+int rand(void) { seed = seed*0x343fd+0x269ec3; return (seed>>16)&32767; }
+float frand(void) { return float(rand())/32767.0; }
+void  srand( ivec2 p, int frame ){
+    int n = frame;
+    n = (n<<13)^n; n=n*(n*n*15731+789221)+1376312589; // by Hugo Elias
+    n += p.y;
+    n = (n<<13)^n; n=n*(n*n*15731+789221)+1376312589;
+    n += p.x;
+    n = (n<<13)^n; n=n*(n*n*15731+789221)+1376312589;
+    seed = n;
 }
 
 float distanceFromLine(vec4 p, vec4 x_o, vec4 x_1){
@@ -70,18 +77,21 @@ vec4 getBoundaryValue(vec4 x_o){
 }
 
 vec4 MonteCarloEstim(vec4 currentOrigin){
+    int it = 0;
     float radius = closestPoint(currentOrigin);
-    while(radius > params.eps) {  
-        int seed = int(currentOrigin.x * 2000000); 
-        float th = rand(seed) * 2 *  M_PI;
+    int seed = int(currentOrigin.x * 2000000); 
+    while(it < maxWalk && radius > params.eps) {  
+        it++;
+        float th = frand() * 2 *  M_PI;
         currentOrigin = vec4(currentOrigin.x + radius * cos(th), currentOrigin.y + radius * sin(th), currentOrigin.zw);
         radius = closestPoint(currentOrigin);
     }
-
+    if(it == maxWalk) return vec4(0.,0.,0.,1.);
     return getBoundaryValue(currentOrigin);    
 }
 
 void main(){
+    srand(ivec2(gl_FragCoord.xy), 2);
     vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
     for(int i = 0; i < params.sampleN; ++i){
         sum += MonteCarloEstim(gl_FragCoord);
