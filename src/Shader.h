@@ -57,7 +57,6 @@ public:
         unsigned int location = glGetUniformLocation(ID, name);
         if(location == -1){
             std::cerr << "ERROR: Unable to find " << name << " named uniform" << std::endl;
-            throw -1;
         }
         return location;
     }
