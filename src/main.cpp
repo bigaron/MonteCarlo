@@ -38,8 +38,7 @@ int main(){
     int halfW = screenWidth / 2, halfH = screenHeight / 2;
     int side = 300;
     std::vector<glm::vec4> points = {glm::vec4(halfW + side, halfH - side, 0., 1.), glm::vec4(halfW + side, halfH + side, 0., 1.), glm::vec4(halfW - side, halfH + side, 0., 1.), glm::vec4(halfW - side, halfH - side, 0., 1.)};
-    //std::vector<glm::vec4> boundary = {glm::vec4(1.f, 0.f, .0f, 1.f), glm::vec4(.0f, 1.f, 0.f, 1.f), glm::vec4(.0f, 0.f, 1.f, 1.f), glm::vec4( 1.f, 1.f, .0f, 1.f)};
-    std::vector<glm::vec4> boundary = {glm::vec4(0.f, 0.f, .0f, 1.f), glm::vec4(0.f, 0.f, .0f, 1.f), glm::vec4( 1.f, 1.f, 1.0f, 1.f), glm::vec4( 1.f, 1.f, 1.0f, 1.f)};
+    std::vector<glm::vec4> boundary = {glm::vec4(1.f, 0.f, .0f, 1.f), glm::vec4(0.f, 1.f, .0f, 1.f), glm::vec4( 0.f, 0.f, 1.0f, 1.f), glm::vec4( 1.f, 1.f, 1.0f, 1.f)};
     std::vector<VertexAttrib> vtxs, bounds;
     VertexAttrib vertices;
     for(int i = 0; i < points.size(); ++i) {
