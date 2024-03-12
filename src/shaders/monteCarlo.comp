@@ -1,13 +1,11 @@
 #version 460 core
 
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(rgba32f, binding = 0) uniform image2D imgOut;
+
 #define M_PI 3.1415926535897932384626433832795
 const float inf = 100000000.f;
 const int maxWalk = 200;
-
-out vec4 FragColor;
-
-in vec4 ourColor;
-in vec2 TexCoords;
 
 struct VertexData{
     vec4 pos;
@@ -27,12 +25,9 @@ layout(std430, binding = 1) readonly buffer ssbo1{
     VertexData boundaryPoints[];
 };
 
-layout(std140, binding = 0) uniform Matrices{
-    vec4 resolution;
+layout(std140, binding = 1) uniform Matrices{
+    vec4 offset;
 };
-
-
-uniform sampler2D tex;
 
 //==============================================================
 //Rand function from Visual Studio
@@ -96,7 +91,15 @@ vec4 MonteCarloEstim(vec4 currentOrigin){
 }
 
 void main(){
-    //vec2 texCoord = vec2((gl_FragCoord.x - 340) / 600, (gl_FragCoord.y - 60) / 600);
-    vec3 texCol = texture(tex, TexCoords).rgb;
-    FragColor = vec4(texCol, 1.0);
+    srand(ivec2(gl_GlobalInvocationID.xy), 2);
+    vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
+    vec4 realCoord;
+    for(int i = 0; i < params.sampleN; ++i){
+        realCoord = vec4(gl_GlobalInvocationID, 1.0) + offset;
+        sum += MonteCarloEstim(realCoord);
+    }
+
+    sum /= params.sampleN;
+    //if(gl_GlobalInvocationID.y > 600) imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), vec4(0.2,0.4,0.6,1));
+    imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), sum);
 }

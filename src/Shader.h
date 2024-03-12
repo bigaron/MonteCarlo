@@ -10,9 +10,35 @@
 
 class Shader{
 public: 
-    unsigned int ID;
+    unsigned int graphicsID, computeID;
 
-    Shader(const char* vtxShdrPath, const char* fgmtShdrPath){
+    void ComputeShader(const char* computeShdrPath){
+        std::string cmptCode;
+        std::ifstream cmptShaderFile;
+        cmptShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        try{
+            cmptShaderFile.open(computeShdrPath);
+            std::stringstream cmptShaderStream;
+            cmptShaderStream << cmptShaderFile.rdbuf();
+            cmptShaderFile.close();
+            cmptCode = cmptShaderStream.str();
+        }catch(std::istream::failure& e){
+            std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ( " << e.what() << " )" << std::endl;
+        }
+        const char* cmptShaderCode = cmptCode.c_str();
+        unsigned int cmpt;
+        cmpt = glCreateShader(GL_COMPUTE_SHADER);
+        glShaderSource(cmpt, 1, &cmptShaderCode, nullptr);
+        glCompileShader(cmpt);
+        checkCompileErrors(cmpt, "COMPUTE");
+
+        computeID = glCreateProgram();
+        glAttachShader(computeID, cmpt);
+        glLinkProgram(computeID);
+        checkCompileErrors(computeID, "PROGRAM");
+    }
+
+    void GraphicsShader(const char* vtxShdrPath, const char* fgmtShdrPath){
         std::string vtxCode, fgmntCode;
         std::ifstream vShaderFile, fShaderFile;
         vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -43,17 +69,17 @@ public:
         glCompileShader(fragment);
         checkCompileErrors(fragment, "FRAGMENT");
 
-        ID = glCreateProgram();
-        glAttachShader(ID, vertex);
-        glAttachShader(ID, fragment);
-        glLinkProgram(ID);
-        checkCompileErrors(ID, "PROGRAM");
+        graphicsID = glCreateProgram();
+        glAttachShader(graphicsID, vertex);
+        glAttachShader(graphicsID, fragment);
+        glLinkProgram(graphicsID);
+        checkCompileErrors(graphicsID, "PROGRAM");
 
         glDeleteShader(vertex);
         glDeleteShader(fragment);
     }
 
-    unsigned int getUniformLocation(const char* name){
+    unsigned int getUniformLocation(const char* name, const unsigned int ID) const{
         unsigned int location = glGetUniformLocation(ID, name);
         if(location == -1){
             std::cerr << "ERROR: Unable to find " << name << " named uniform" << std::endl;
