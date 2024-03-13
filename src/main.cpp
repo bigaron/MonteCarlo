@@ -52,7 +52,7 @@ int main(){
 
     MonteCarloParameters mcParms;
     mcParms.eps = 0.1f;
-    mcParms.sampleN = 100;
+    mcParms.sampleN = 1000;
     mcParms.vertexN = 5;
 
     GLint localNum[3];
