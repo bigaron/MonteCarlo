@@ -32,7 +32,7 @@ int main(){
 
     std::vector<glm::vec4> cps = {glm::vec4(120, 300 ,0 ,1), glm::vec4(250, 290, 0 , 1), glm::vec4(700, 360, 0 , 1), glm::vec4(600, 600, 0, 1)}; 
     std::vector<glm::vec4> controlPoints;
-    controlPoints = calculateBezierCurve(cps, 0.01f);
+    controlPoints = calculateBezierCurve(cps, 0.005f);
     std::vector<glm::vec4> points = {glm::vec4(screenWidth, 0, 0., 1.), glm::vec4(screenWidth, screenHeight, 0., 1.), glm::vec4(0, screenHeight, 0., 1.), glm::vec4(0, 0, 0., 1.)};
     std::vector<glm::vec4> boundary = {glm::vec4(0.f, 0.f, .0f, 1.f), glm::vec4(0.f, 1.f, .0f, 1.f), glm::vec4( 1.f, .0f, 1.0f, 1.f), glm::vec4( 1.f, 1.f, 1.0f, 1.f)};
     std::vector<VertexAttrib> vtxs, bounds;
@@ -49,7 +49,7 @@ int main(){
 
     MonteCarloParameters mcParms;
     mcParms.eps = 0.1f;
-    mcParms.sampleN = 10;
+    mcParms.sampleN = 100;
     mcParms.vertexN = (float)bounds.size() - 1;
 
     GLint maxInvocation;

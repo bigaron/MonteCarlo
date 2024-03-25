@@ -5,7 +5,7 @@ layout(rgba32f, binding = 0) uniform image2D imgOut;
 
 #define M_PI 3.1415926535897932384626433832795
 const float inf = 100000000.f;
-const int maxWalk = 10;
+const int maxWalk = 20;
 
 struct VertexData{
     vec4 pos;
@@ -55,7 +55,7 @@ float distanceFromLine(vec4 p, vec4 x_o, vec4 x_1){
 float closestPoint(vec4 x_o){
     float dist = inf;
     for(int i = 0; i < params.vertexN - 1; i++){
-        float distFromCurrentWall = distanceFromLine(x_o, boundaryPoints[i].pos, boundaryPoints[i+1].pos);
+        float distFromCurrentWall = length(x_o - boundaryPoints[i].pos);
         if(distFromCurrentWall < dist) dist = distFromCurrentWall;
     }
     return dist;
@@ -66,7 +66,7 @@ vec4 getBoundaryValue(vec4 x_o){
     int boundIndx = 0;
     vec4 ret;
     for(int i = 0; i < params.vertexN - 1; ++i) {
-        float currentDist = distanceFromLine(x_o, boundaryPoints[i].pos, boundaryPoints[i+1].pos);
+        float currentDist = length(x_o - boundaryPoints[i].pos);
         if(currentDist < dist) {
             dist = currentDist;
             ret = boundaryPoints[i].value;
