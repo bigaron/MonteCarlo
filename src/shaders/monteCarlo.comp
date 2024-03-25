@@ -5,7 +5,7 @@ layout(rgba32f, binding = 0) uniform image2D imgOut;
 
 #define M_PI 3.1415926535897932384626433832795
 const float inf = 100000000.f;
-const int maxWalk = 200;
+const int maxWalk = 10;
 
 struct VertexData{
     vec4 pos;
@@ -100,6 +100,5 @@ void main(){
     }
 
     sum /= params.sampleN;
-    //if(gl_GlobalInvocationID.y > 600) imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), vec4(0.2,0.4,0.6,1));
     imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), sum);
 }

@@ -10,57 +10,51 @@
 #include "VertexAttrib.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_motion_callback(GLFWwindow* window, int button, int action, int mods);
+std::vector<glm::vec4> calculateBezierCurve(const std::vector<glm::vec4>& controlPoints, float timeStep);
 
-const int screenWidth = 1280, screenHeight = 720;
+
+const int screenWidth = 1280, screenHeight = 736;
+const int maxPoints = 100;
+const glm::vec4 white(1.0, 1.0, 1.0, 1.0);
+
+GLFWwindow* contextSetup();
 
 int main(){
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "MonteCarlo", nullptr, nullptr);
-    if (window == nullptr){
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    if(GLenum err = glewInit(); GLEW_OK != err) {
-        std::cout << glewGetErrorString(err) << std::endl;
-        return -1;
-    }
-    glViewport(0, 0, screenWidth, screenHeight);
-    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl << "GPU: "<< glGetString(GL_RENDERER) << std::endl;
-    glEnable(GL_DEPTH_TEST);
+    GLFWwindow* window = contextSetup();
 
     Shader shader;
     shader.GraphicsShader("../src/shaders/vertex.vs", "../src/shaders/fragment.fs");
     shader.ComputeShader("../src/shaders/monteCarlo.comp");
 
-    int halfW = screenWidth / 2, halfH = screenHeight / 2;
-    const int side = 320;
-    std::vector<glm::vec4> points = {glm::vec4(halfW + side, halfH - side, 0., 1.), glm::vec4(halfW + side, halfH + side, 0., 1.), glm::vec4(halfW - side, halfH + side, 0., 1.), glm::vec4(halfW - side, halfH - side, 0., 1.)};
+    Shader cmrsShader;
+    cmrsShader.GraphicsShader("../src/shaders/cmrSpline.vs", "../src/shaders/cmrSpline.fs");
+
+    std::vector<glm::vec4> cps = {glm::vec4(120, 300 ,0 ,1), glm::vec4(250, 290, 0 , 1), glm::vec4(700, 360, 0 , 1), glm::vec4(600, 600, 0, 1)}; 
+    std::vector<glm::vec4> controlPoints;
+    controlPoints = calculateBezierCurve(cps, 0.01f);
+    std::vector<glm::vec4> points = {glm::vec4(screenWidth, 0, 0., 1.), glm::vec4(screenWidth, screenHeight, 0., 1.), glm::vec4(0, screenHeight, 0., 1.), glm::vec4(0, 0, 0., 1.)};
     std::vector<glm::vec4> boundary = {glm::vec4(0.f, 0.f, .0f, 1.f), glm::vec4(0.f, 1.f, .0f, 1.f), glm::vec4( 1.f, .0f, 1.0f, 1.f), glm::vec4( 1.f, 1.f, 1.0f, 1.f)};
     std::vector<VertexAttrib> vtxs, bounds;
     VertexAttrib vertices;
     for(int i = 0; i < points.size(); ++i) {
         vertices = copyValuesToVertexAttrib(vertices, points[i], boundary[i]);
         vtxs.push_back(vertices);
+    }
+    for(int i = 0; i < controlPoints.size(); ++i){
+        vertices = copyValuesToVertexAttrib(vertices, controlPoints[i], white);
         bounds.push_back(vertices);
     }
-    bounds.push_back(copyValuesToVertexAttrib(vertices, points[0], boundary[0]));
+    //bounds.push_back(copyValuesToVertexAttrib(vertices, controlPoints[0], white));
 
     MonteCarloParameters mcParms;
     mcParms.eps = 0.1f;
-    mcParms.sampleN = 1000;
-    mcParms.vertexN = 5;
+    mcParms.sampleN = 10;
+    mcParms.vertexN = (float)bounds.size() - 1;
 
-    GLint localNum[3];
     GLint maxInvocation;
     glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &maxInvocation);
-    for(int i = 0; i < 3; ++i) glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, i, &localNum[i]);
     std::cout << "MAX INVOCATIONS PER WORKGROUP: " << maxInvocation << std::endl;
-    
 
     unsigned int vao;
     glGenVertexArrays(1, &vao);
@@ -112,7 +106,7 @@ int main(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 2*side, 2*side, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
     glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -120,20 +114,36 @@ int main(){
     glUseProgram(shader.computeID);
     GLuint offsetUBO;
     glCreateBuffers(1, &offsetUBO);
-    glm::vec4 offs(screenWidth/2 - side, screenHeight/2 - side, 0.0, 0.0);  
+    glm::vec4 offs(0.0,0.0, 0.0, 0.0);  
     glNamedBufferStorage(offsetUBO, sizeof(glm::vec4), (const void*)&offs, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, offsetUBO);
-    glDispatchCompute((GLuint) 2*side / 32, (GLuint) 2*side / 32, 1);
+    glDispatchCompute((GLuint) screenWidth / 32, (GLuint) screenHeight / 32, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    glUseProgram(shader.graphicsID);
+    GLuint contPointsVBO, cmrsVAO;
+    glGenVertexArrays(1, &cmrsVAO);
+    glGenBuffers(1, &contPointsVBO);
 
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, (int)vtxs.size());
-    glfwSwapBuffers(window);
+    //glUseProgram(cmrsShader.graphicsID);
+    //glBindVertexArray(cmrsVAO);
+    //glBindBuffer(GL_ARRAY_BUFFER, contPointsVBO);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * controlPoints.size(), (const void*)controlPoints.data(), GL_DYNAMIC_DRAW);
+    //glEnableVertexAttribArray(0);
+    //glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
+    //glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)controlPoints.size());
+
+
     while(!glfwWindowShouldClose(window)){
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glUseProgram(cmrsShader.graphicsID);
+        //glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)controlPoints.size());
+        
+        glUseProgram(shader.graphicsID);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, (int)vtxs.size());
         glfwPollEvents();
+        glfwSwapBuffers(window);
     }
     
     glDeleteBuffers(1, &vertxAttrSSBO);
@@ -141,8 +151,56 @@ int main(){
     return 0;
 }
 
+std::vector<glm::vec4> calculateBezierCurve(const std::vector<glm::vec4>& controlPoints, float timeStep){
+    std::vector<glm::vec4> points;
+
+    for(auto t = 0.0f; t < 1.0f; t += timeStep){
+        glm::vec4 point;
+        float oneMinT = 1.0f-t;
+        point = powf(oneMinT, 3) * controlPoints[0] + 3 * powf(oneMinT, 2) * t * controlPoints[1] + 3 * oneMinT * t * t * controlPoints[2] + powf(t, 3) * controlPoints[3];
+        points.push_back(point);
+    }
+
+    return points;
+}
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+}
+
+void mouse_motion_callback(GLFWwindow* window, int button, int action, int mods){
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        
+    }
+}
+
+GLFWwindow* contextSetup(){
+    glfwInit();
+    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "MonteCarlo", nullptr, nullptr);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    if (window == nullptr){
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        exit(-1);
+    }
+    glfwMakeContextCurrent(window);
+    if(GLenum err = glewInit(); GLEW_OK != err) {
+        std::cout << glewGetErrorString(err) << std::endl;
+        exit(-1);
+    }
+    glViewport(0, 0, screenWidth, screenHeight);
+    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl << "GPU: "<< glGetString(GL_RENDERER) << std::endl;
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetMouseButtonCallback(window, mouse_motion_callback);
+
+    return window;
 }
