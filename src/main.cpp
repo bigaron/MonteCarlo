@@ -17,6 +17,8 @@ std::vector<glm::vec4> calculateBezierCurve(const std::vector<glm::vec4>& contro
 const int screenWidth = 1280, screenHeight = 736;
 const int maxPoints = 100;
 const glm::vec4 white(1.0, 1.0, 1.0, 1.0);
+const glm::vec4 black(16.0f/255, 24.0f/255, 32.0f/255, 1.0f);
+const glm::vec4 yellow(254.0f/255, 231.0f/255, 21.0f/255, 1.0f);
 
 GLFWwindow* contextSetup();
 
@@ -41,9 +43,13 @@ int main(){
         vertices = copyValuesToVertexAttrib(vertices, points[i], boundary[i]);
         vtxs.push_back(vertices);
     }
+    int cntr = 0;
     for(int i = 0; i < controlPoints.size(); ++i){
-        vertices = copyValuesToVertexAttrib(vertices, controlPoints[i], white);
+        if(cntr == 19) cntr = 0;
+        glm::vec4 colour = cntr > 10 ? black : yellow;
+        vertices = copyValuesToVertexAttrib(vertices, controlPoints[i], colour);
         bounds.push_back(vertices);
+        cntr++;
     }
     //bounds.push_back(copyValuesToVertexAttrib(vertices, controlPoints[0], white));
 
