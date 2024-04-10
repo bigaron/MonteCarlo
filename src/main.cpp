@@ -19,6 +19,7 @@ const int maxPoints = 100;
 const glm::vec4 white(1.0, 1.0, 1.0, 1.0);
 const glm::vec4 black(16.0f/255, 24.0f/255, 32.0f/255, 1.0f);
 const glm::vec4 yellow(254.0f/255, 231.0f/255, 21.0f/255, 1.0f);
+const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
 
 GLFWwindow* contextSetup();
 
@@ -46,7 +47,7 @@ int main(){
     int cntr = 0;
     for(int i = 0; i < controlPoints.size(); ++i){
         if(cntr == 19) cntr = 0;
-        glm::vec4 colour = cntr > 10 ? black : yellow;
+        glm::vec4 colour = cntr > 10 ? red : white;
         vertices = copyValuesToVertexAttrib(vertices, controlPoints[i], colour);
         bounds.push_back(vertices);
         cntr++;
@@ -54,8 +55,8 @@ int main(){
     //bounds.push_back(copyValuesToVertexAttrib(vertices, controlPoints[0], white));
 
     MonteCarloParameters mcParms;
-    mcParms.eps = 0.1f;
-    mcParms.sampleN = 100;
+    mcParms.eps = 1.0f;
+    mcParms.sampleN = 1;
     mcParms.vertexN = (float)bounds.size() - 1;
 
     GLint maxInvocation;
