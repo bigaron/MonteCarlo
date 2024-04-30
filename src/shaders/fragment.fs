@@ -8,7 +8,7 @@ in vec2 TexCoords;
 uniform sampler2D tex;
 
 void main(){
-    vec4 texCol = texture(tex, TexCoords);
-    //FragColor = texCol
-    FragColor = vec4(texCol.xyz / texCol.w, 1);
+    //vec3 texCol = texture(tex, TexCoords).rgb;
+    FragColor = texture(tex, TexCoords);
+    //FragColor = gl_Color;
 }

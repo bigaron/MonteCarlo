@@ -1,7 +1,7 @@
 #ifndef VERTEXATTRIB_H
 #define VERTEXATTRIB_H
 
-#include "glm.hpp"
+#include "glm/glm.hpp"
 #include <cstring>
 
 struct VertexAttrib{

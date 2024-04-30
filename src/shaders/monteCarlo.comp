@@ -1,7 +1,7 @@
 #version 460 core
 
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
-layout(rgba32f, binding = 0) uniform image2D imgOut;
+layout(rgba32f, binding = 0) coherent uniform image2D imgOut;
 
 #define M_PI 3.1415926535897932384626433832795
 const float inf = 100000000.f;
@@ -17,7 +17,7 @@ struct MonteCarloParams{
     float vertexN;
     float eps;
     float sampleN;
-    float seed;
+    float padding2;
 };
 
 layout(std430, binding = 1) readonly buffer ssbo1{
@@ -27,13 +27,6 @@ layout(std430, binding = 1) readonly buffer ssbo1{
 
 layout(std140, binding = 1) uniform Matrices{
     vec4 offset;
-};
-
-layout(std430, binding = 2) coherent buffer ssbo2{
-    float pass;
-    float padding_1;
-    float padding_2;
-    float padding_3;
 };
 
 //==============================================================
@@ -97,11 +90,8 @@ vec4 MonteCarloEstim(vec4 currentOrigin){
     return getBoundaryValue(currentOrigin);    
 }
 
-//TODO: seedelni csak egyszer, ha a fo szal elindult
-
 void main(){
-    srand(ivec2(gl_GlobalInvocationID.xy), int(pass));
-    
+    srand(ivec2(gl_GlobalInvocationID.xy), 2);
     vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
     vec4 realCoord;
     for(int i = 0; i < params.sampleN; ++i){
@@ -109,8 +99,15 @@ void main(){
         sum += MonteCarloEstim(realCoord);
     }
 
-    sum += imageLoad(imgOut, ivec2(gl_GlobalInvocationID.xy));
-    //sum /= params.sampleN;
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy + offset.xy);
 
-    imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), sum);
+    vec4 val = imageLoad(imgOut, pos);
+
+   // if(val.x < 0.01 && val.y < 0.01 && val.z < 0.01) imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), vec4(.4f, 0.7f, 0.2f, 1.0f));
+   //else{
+       sum += imageLoad(imgOut, pos);
+        sum /= params.sampleN;
+        imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), sum);
+    //}
 }
+    

@@ -1,3 +1,9 @@
 build
 .vscode
+.vs
 include
+monteCarlo.sln
+monteCarlo.vcxproj
+monteCarlo.vcxproj.user
+x64
+monteCarlo
