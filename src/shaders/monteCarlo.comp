@@ -5,7 +5,7 @@ layout(rgba32f, binding = 0) uniform image2D imgOut;
 
 #define M_PI 3.1415926535897932384626433832795
 const float inf = 100000000.f;
-const int maxWalk = 4;
+const int maxWalk = 5;
 
 struct VertexData{
     vec4 pos;
@@ -17,7 +17,7 @@ struct MonteCarloParams{
     float vertexN;
     float eps;
     float sampleN;
-    float padding2;
+    float seed;
 };
 
 layout(std430, binding = 1) readonly buffer ssbo1{
@@ -27,6 +27,13 @@ layout(std430, binding = 1) readonly buffer ssbo1{
 
 layout(std140, binding = 1) uniform Matrices{
     vec4 offset;
+};
+
+layout(std430, binding = 2) coherent buffer ssbo2{
+    float pass;
+    float padding_1;
+    float padding_2;
+    float padding_3;
 };
 
 //==============================================================
@@ -90,8 +97,11 @@ vec4 MonteCarloEstim(vec4 currentOrigin){
     return getBoundaryValue(currentOrigin);    
 }
 
+//TODO: seedelni csak egyszer, ha a fo szal elindult
+
 void main(){
-    srand(ivec2(gl_GlobalInvocationID.xy), 2);
+    srand(ivec2(gl_GlobalInvocationID.xy), int(pass));
+    
     vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
     vec4 realCoord;
     for(int i = 0; i < params.sampleN; ++i){
@@ -99,6 +109,8 @@ void main(){
         sum += MonteCarloEstim(realCoord);
     }
 
-    sum /= params.sampleN;
+    sum += imageLoad(imgOut, ivec2(gl_GlobalInvocationID.xy));
+    //sum /= params.sampleN;
+
     imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), sum);
 }

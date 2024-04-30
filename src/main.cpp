@@ -20,6 +20,7 @@ const glm::vec4 white(1.0, 1.0, 1.0, 1.0);
 const glm::vec4 black(16.0f/255, 24.0f/255, 32.0f/255, 1.0f);
 const glm::vec4 yellow(254.0f/255, 231.0f/255, 21.0f/255, 1.0f);
 const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+const glm::vec4 blue(0.0f, 0.0f, 1.0f, 1.0f);
 
 GLFWwindow* contextSetup();
 
@@ -33,9 +34,13 @@ int main(){
     Shader cmrsShader;
     cmrsShader.GraphicsShader("../src/shaders/cmrSpline.vs", "../src/shaders/cmrSpline.fs");
 
-    std::vector<glm::vec4> cps = {glm::vec4(120, 300 ,0 ,1), glm::vec4(250, 290, 0 , 1), glm::vec4(700, 360, 0 , 1), glm::vec4(600, 600, 0, 1)}; 
+    std::vector<glm::vec4> cps0 = {glm::vec4(120, 300 ,0 ,1), glm::vec4(250, 290, 0 , 1), glm::vec4(700, 360, 0 , 1), glm::vec4(600, 600, 0, 1)}; 
+    std::vector<glm::vec4> cps1 = { glm::vec4(460, 270, 0, 1), glm::vec4(640, 360, 0, 1), glm::vec4(960, 450, 0, 1), glm::vec4(1220, 360, 0, 1) };
     std::vector<glm::vec4> controlPoints;
-    controlPoints = calculateBezierCurve(cps, 0.005f);
+    controlPoints = calculateBezierCurve(cps0, 0.005f);
+    size_t siz = controlPoints.size();
+    std::vector<glm::vec4> newC = calculateBezierCurve(cps1, 0.01f);
+    for (auto& val : newC) controlPoints.push_back(val);
     std::vector<glm::vec4> points = {glm::vec4(screenWidth, 0, 0., 1.), glm::vec4(screenWidth, screenHeight, 0., 1.), glm::vec4(0, screenHeight, 0., 1.), glm::vec4(0, 0, 0., 1.)};
     std::vector<glm::vec4> boundary = {glm::vec4(0.f, 0.f, .0f, 1.f), glm::vec4(0.f, 1.f, .0f, 1.f), glm::vec4( 1.f, .0f, 1.0f, 1.f), glm::vec4( 1.f, 1.f, 1.0f, 1.f)};
     std::vector<VertexAttrib> vtxs, bounds;
@@ -46,8 +51,12 @@ int main(){
     }
     int cntr = 0;
     for(int i = 0; i < controlPoints.size(); ++i){
-        if(cntr == 19) cntr = 0;
-        glm::vec4 colour = cntr > 10 ? red : white;
+        if (cntr == 19) cntr = 0;
+        glm::vec4 colour;
+        if (i < siz) {
+            colour = cntr > 10 ? red : white;
+        }
+        else colour = cntr > 10 ? yellow : blue;
         vertices = copyValuesToVertexAttrib(vertices, controlPoints[i], colour);
         bounds.push_back(vertices);
         cntr++;
@@ -55,9 +64,11 @@ int main(){
     //bounds.push_back(copyValuesToVertexAttrib(vertices, controlPoints[0], white));
 
     MonteCarloParameters mcParms;
-    mcParms.eps = 1.0f;
-    mcParms.sampleN = 1;
+    mcParms.eps = 1.5f;
+    mcParms.sampleN = 8;
     mcParms.vertexN = (float)bounds.size() - 1;
+    mcParms.seed = 129304.0f;
+
 
     GLint maxInvocation;
     glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &maxInvocation);
@@ -84,11 +95,19 @@ int main(){
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, windowContextUBO);
 
     unsigned int vertxAttrSSBO;
+    GLuint randomSSBO;
+    RandomStruct rstruct = RandomStruct();
+    rstruct.seedSSBO = 1;
+
     glCreateBuffers(1, &vertxAttrSSBO);
     glNamedBufferStorage(vertxAttrSSBO, sizeof(VertexAttrib) * vtxs.size(), (const void*) vtxs.data(), GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertxAttrSSBO);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, windowContextUBO);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, boundSSBO);
+    glCreateBuffers(1, &randomSSBO);
+    glNamedBufferStorage(randomSSBO, sizeof(RandomStruct), (const void*) &rstruct ,GL_DYNAMIC_STORAGE_BIT);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, randomSSBO);
+    
 
     GLuint texLoc = shader.getUniformLocation("tex", shader.graphicsID);
     glUniform1i(texLoc, 0);
@@ -124,28 +143,27 @@ int main(){
     glm::vec4 offs(0.0,0.0, 0.0, 0.0);  
     glNamedBufferStorage(offsetUBO, sizeof(glm::vec4), (const void*)&offs, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, offsetUBO);
-    glDispatchCompute((GLuint) screenWidth / 32, (GLuint) screenHeight / 32, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glDispatchCompute((GLuint) screenWidth / 32, (GLuint) screenHeight / 32, 1);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     GLuint contPointsVBO, cmrsVAO;
     glGenVertexArrays(1, &cmrsVAO);
     glGenBuffers(1, &contPointsVBO);
 
-    //glUseProgram(cmrsShader.graphicsID);
-    //glBindVertexArray(cmrsVAO);
-    //glBindBuffer(GL_ARRAY_BUFFER, contPointsVBO);
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * controlPoints.size(), (const void*)controlPoints.data(), GL_DYNAMIC_DRAW);
-    //glEnableVertexAttribArray(0);
-    //glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
-    //glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)controlPoints.size());
-
 
     while(!glfwWindowShouldClose(window)){
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //glUseProgram(cmrsShader.graphicsID);
-        //glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)controlPoints.size());
-        
+        if(rstruct.seedSSBO < 50){
+            glUseProgram(shader.computeID);
+            glDispatchCompute((GLuint) screenWidth / 32, (GLuint) screenHeight / 32, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |  GL_TEXTURE_UPDATE_BARRIER_BIT);
+            rstruct.seedSSBO++;
+            glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RandomStruct), nullptr, GL_DYNAMIC_DRAW);
+            glCreateBuffers(1, &randomSSBO);
+            glNamedBufferStorage(randomSSBO, sizeof(RandomStruct), (const void*) &rstruct ,GL_DYNAMIC_STORAGE_BIT);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, randomSSBO);
+        }
         glUseProgram(shader.graphicsID);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLE_FAN, 0, (int)vtxs.size());
