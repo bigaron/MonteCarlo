@@ -7,7 +7,7 @@ struct MonteCarloParameters{
     float vertexN;
     float eps;
     float sampleN;
-    float padding2;
+    unsigned int maxWalkN;
 };
 
 struct BoundaryTopology{

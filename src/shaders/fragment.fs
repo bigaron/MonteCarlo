@@ -9,6 +9,7 @@ uniform sampler2D tex;
 
 void main(){
     //vec3 texCol = texture(tex, TexCoords).rgb;
-    FragColor = texture(tex, TexCoords);
-    //FragColor = gl_Color;
+    vec4 finalText = texture(tex, TexCoords);
+    FragColor = vec4(finalText.xyz / finalText.w, 1.0f);
+    //FragColor = finalText;
 }
