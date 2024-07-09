@@ -53,8 +53,8 @@ int main() {
     shader.GraphicsShader("src/shaders/vertex.vs", "src/shaders/fragment.fs");
     shader.ComputeShader("src/shaders/monteCarlo.comp");
 
-    std::vector<glm::vec4> cps0 = { glm::vec4(120, 300 ,0 ,1), glm::vec4(250, 290, 0 , 1), glm::vec4(700, 360, 0 , 1), glm::vec4(600, 600, 0, 1) };
-    std::vector<glm::vec4> cps1 = { glm::vec4(460, 270, 0, 1), glm::vec4(640, 360, 0, 1), glm::vec4(960, 450, 0, 1), glm::vec4(1220, 360, 0, 1) };
+    std::vector<glm::vec4> cps0 = { glm::vec4(120, 300 ,0 ,0), glm::vec4(250, 290, 0 , 0), glm::vec4(700, 360, 0 ,0), glm::vec4(600, 600, 0, 0) };
+    std::vector<glm::vec4> cps1 = { glm::vec4(460, 270, 0, 0), glm::vec4(640, 360, 0, 0), glm::vec4(960, 450, 0, 0), glm::vec4(1220, 360, 0,0) };
     std::vector<glm::vec4> controlPoints;
     controlPoints = calculateBezierCurve(cps0, 0.01f);
     size_t siz = controlPoints.size();
@@ -84,28 +84,11 @@ int main() {
         cudaBounds.push_back(cudaVerx);
         cntr++;
     }
-    /*cudaBounds.clear();
-    cudaVerx.col = make_float4(1.0, 0.0, 0.0, 1.0);
-    cudaVerx.pos = make_float4(700, 308, 1, 1);
-    cudaBounds.push_back(cudaVerx);
 
-    cudaVerx.col = make_float4(0.0, 0.0, 1.0, 1.0);
-    cudaVerx.pos = make_float4(700, 428, 1, 1);
-    cudaBounds.push_back(cudaVerx);
-
-    cudaVerx.col = make_float4(0.0, 1.0, 0.0, 1.0);
-    cudaVerx.pos = make_float4(580, 428, 1, 1);
-    cudaBounds.push_back(cudaVerx);
-
-    cudaVerx.col = make_float4(0.0, 0.0, 0.0, 1.0);
-    cudaVerx.pos = make_float4(580, 308, 1, 1);
-    cudaBounds.push_back(cudaVerx);*/
-
-    //bounds.push_back(copyValuesToVertexAttrib(vertices, controlPoints[0], white));
 
     MonteCarloParameters mcParms;
-    mcParms.eps = 1.5f;
-    mcParms.sampleN = 8;
+    mcParms.eps = 1.f;
+    mcParms.sampleN = 50;
     mcParms.vertexN = (float)cudaBounds.size();
     mcParms.maxWalkN = 40;
 
