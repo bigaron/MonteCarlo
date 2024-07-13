@@ -7,7 +7,7 @@ struct MonteCarloParameters{
     float vertexN;
     float eps;
     float sampleN;
-    unsigned int maxWalkN;
+    float seed;
 };
 
 struct BoundaryTopology{
@@ -27,5 +27,10 @@ struct BoundaryValues{
 
     glm::vec4 boundValues[];
 };
-
+struct RandomStruct {
+    float seedSSBO;
+    float padding1;
+    float padding2;
+    float padding3;
+};
 #endif

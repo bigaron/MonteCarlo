@@ -1,26 +1,30 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+#include "glew.h"
+
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 
-class Shader{
-public: 
+
+class Shader {
+public:
     unsigned int graphicsID, computeID;
 
-    void ComputeShader(const char* computeShdrPath){
+    void ComputeShader(const char* computeShdrPath) {
         std::string cmptCode;
         std::ifstream cmptShaderFile;
         cmptShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        try{
+        try {
             cmptShaderFile.open(computeShdrPath);
             std::stringstream cmptShaderStream;
             cmptShaderStream << cmptShaderFile.rdbuf();
             cmptShaderFile.close();
             cmptCode = cmptShaderStream.str();
-        }catch(std::istream::failure& e){
+        }
+        catch (std::istream::failure& e) {
             std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ( " << e.what() << " )" << std::endl;
         }
         const char* cmptShaderCode = cmptCode.c_str();
@@ -36,12 +40,12 @@ public:
         checkCompileErrors(computeID, "PROGRAM");
     }
 
-    void GraphicsShader(const char* vtxShdrPath, const char* fgmtShdrPath){
+    void GraphicsShader(const char* vtxShdrPath, const char* fgmtShdrPath) {
         std::string vtxCode, fgmntCode;
         std::ifstream vShaderFile, fShaderFile;
         vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        try{
+        try {
             vShaderFile.open(vtxShdrPath);
             fShaderFile.open(fgmtShdrPath);
             std::stringstream vShdrStream, fShdrStream;
@@ -51,7 +55,8 @@ public:
             fShaderFile.close();
             vtxCode = vShdrStream.str();
             fgmntCode = fShdrStream.str();
-        }catch(std::ifstream::failure& e){
+        }
+        catch (std::ifstream::failure& e) {
             std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ( " << e.what() << " )" << std::endl;
         }
         const char* vShaderCode = vtxCode.c_str();
@@ -77,16 +82,16 @@ public:
         glDeleteShader(fragment);
     }
 
-    unsigned int getUniformLocation(const char* name, const unsigned int ID) const{
+    unsigned int getUniformLocation(const char* name, const unsigned int ID) const {
         unsigned int location = glGetUniformLocation(ID, name);
-        if(location == -1){
+        if (location == -1) {
             std::cerr << "ERROR: Unable to find " << name << " named uniform" << std::endl;
         }
         return location;
     }
 
 private:
-    void checkCompileErrors(unsigned int shader, const std::string& type) const{
+    void checkCompileErrors(unsigned int shader, const std::string& type) const {
         int success;
         char infoLog[1024];
         if (type != "PROGRAM")
